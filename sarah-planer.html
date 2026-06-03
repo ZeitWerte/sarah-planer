@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mein Planer">
+<title>Mein Planer</title>
+<style>
+:root{
+  --cream:#FAF7F2;--warm:#F0EBE1;--border:#E0D8CC;--ink:#2C2C2C;--muted:#8A8278;
+  --sage:#5C7A5C;--sage-pale:#E8F0E8;--terra:#B85C38;--terra-pale:#F5E8E2;
+  --gold:#C9A46B;--gold-pale:#F7F0E6;--red:#C0392B;--orange:#E67E22;--green:#27AE60;
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+  --tab-h:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--cream);color:var(--ink);font-family:-apple-system,sans-serif;font-size:15px;overflow:hidden;}
+#app{display:flex;flex-direction:column;height:100%;padding-top:var(--safe-top);}
+#header{background:var(--sage);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#header h1{font-size:17px;font-weight:600;}
+.hdr-btns{display:flex;gap:8px;}
+.hdr-btn{background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;}
+#main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--tab-h) + var(--safe-bot) + 8px);}
+#tabbar{position:fixed;bottom:0;left:0;right:0;height:calc(var(--tab-h) + var(--safe-bot));background:#fff;border-top:1px solid var(--border);display:flex;padding-bottom:var(--safe-bot);z-index:100;overflow-x:auto;}
+.tb{flex:1;min-width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;cursor:pointer;color:var(--muted);font-size:9px;font-weight:500;padding-top:6px;}
+.tb.active{color:var(--terra);}
+.tb .ico{font-size:20px;line-height:1;}
+.sec{display:none;padding:14px;}
+.sec.active{display:block;}
+.card{background:#fff;border-radius:14px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;}
+.card-head{padding:11px 14px;background:var(--warm);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.card-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.card.today .card-head{background:var(--terra-pale);border-left:3px solid var(--terra);}
+.card.today .day-name{color:var(--terra);}
+.card.collapsed .card-body{display:none;}
+.day-name{font-weight:600;font-size:14px;}
+.day-date{font-size:12px;color:var(--muted);}
+.ef{width:100%;border:1px solid transparent;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:13px;color:var(--ink);background:var(--cream);resize:none;min-height:32px;line-height:1.45;}
+.ef:focus{outline:none;border-color:var(--sage);background:#fff;}
+.ef::placeholder{color:#C0BBB5;}
+.row-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;}
+.meal-btn{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer;width:100%;text-align:left;color:var(--ink);}
+.sec-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin:16px 0 10px;}
+.sec-title:first-child{margin-top:0;}
+.btn-full{width:100%;padding:12px;border:none;border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
+.btn-sage{background:var(--sage);color:#fff;}
+.btn-gold{background:var(--gold);color:#fff;}
+.btn-warm{background:var(--warm);color:var(--muted);border:1px solid var(--border);}
+
+/* CHECKLIST */
+.check-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.check-item:last-child{border-bottom:none;}
+.cb{width:22px;height:22px;border:2px solid var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.cb.done{background:var(--sage);border-color:var(--sage);}
+.cb.done::after{content:"\2713";color:#fff;font-size:12px;font-weight:700;}
+.ci-text{flex:1;font-size:14px;}
+.ci-text.done{text-decoration:line-through;color:var(--muted);}
+.del-btn{background:none;border:none;color:#C0BBB5;font-size:18px;cursor:pointer;padding:4px 6px;}
+.add-row{display:flex;gap:8px;margin-top:8px;}
+.add-input{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;background:#fff;}
+.add-input:focus{outline:none;border-color:var(--sage);}
+.add-btn{padding:9px 16px;background:var(--sage);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;}
+
+/* DASHBOARD */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.dash-card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:14px;}
+.dash-card.full{grid-column:1/-1;}
+.dash-card h4{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;}
+.dash-big{font-size:28px;font-weight:700;color:var(--ink);}
+.dash-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.dash-bar-wrap{background:var(--warm);border-radius:6px;height:8px;overflow:hidden;margin-top:8px;}
+.dash-bar{height:8px;border-radius:6px;background:var(--sage);transition:width .4s;}
+.progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px;}
+.dash-meal-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.dash-meal-row:last-child{border-bottom:none;}
+.dash-day-label{font-size:11px;color:var(--muted);min-width:26px;}
+.dash-alert{background:var(--terra-pale);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--terra);margin-bottom:6px;}
+.dash-ok{background:var(--sage-pale);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--sage);}
+.focus-item{font-size:13px;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.focus-item:last-child{border-bottom:none;}
+.prio-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* WOCHE FOCUS BLOCK */
+#focus-block{background:var(--gold-pale);border-radius:14px;border:1px solid #E8D9B8;padding:13px;margin-bottom:14px;}
+#focus-block h3{font-size:12px;font-weight:700;color:#8B6914;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;}
+.focus-zone{font-size:13px;color:var(--sage);font-weight:600;margin-bottom:6px;}
+#kw-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+#kw-input{border:none;background:var(--warm);border-radius:8px;padding:6px 12px;font-size:14px;font-weight:600;color:var(--sage);width:80px;text-align:center;}
+#kw-input:focus{outline:none;}
+.kw-btn{background:var(--sage);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;}
+.week-zone-sel{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;color:var(--ink);margin-bottom:8px;}
+.week-zone-sel:focus{outline:none;border-color:var(--sage);}
+
+/* ZONE GRID */
+.zone-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.zone-chip{background:#fff;border:2px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;text-align:center;}
+.zone-chip.active{border-color:var(--sage);background:var(--sage-pale);}
+.zone-chip .zn{font-size:11px;color:var(--muted);}
+.zone-chip .zt{font-size:13px;font-weight:600;color:var(--ink);}
+.zone-task-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.zone-task-item:last-child{border-bottom:none;}
+.ztask-text{flex:1;font-size:14px;}
+.ztask-text.done{text-decoration:line-through;color:var(--muted);}
+
+/* ROUTINEN */
+.routine-section{margin-bottom:14px;}
+.routine-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px;}
+
+/* TK */
+.tk-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:6px;}
+.tk-name{flex:1;font-size:14px;}
+.tk-count{font-size:16px;font-weight:700;min-width:28px;text-align:center;}
+.tk-count.zero{color:var(--red);}
+.tk-count.low{color:var(--orange);}
+.tk-count.ok{color:var(--green);}
+.tk-btns{display:flex;gap:4px;}
+.tk-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--warm);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* SHOP */
+.shop-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:5px;cursor:pointer;}
+.shop-item.checked .si-name{text-decoration:line-through;color:var(--muted);}
+.shop-cb{width:20px;height:20px;border:2px solid var(--border);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.shop-item.checked .shop-cb{background:var(--sage);border-color:var(--sage);}
+.shop-item.checked .shop-cb::after{content:"\2713";color:#fff;font-size:10px;}
+.si-name{flex:1;font-size:14px;}
+.shop-cat-header{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;padding:10px 0 4px;}
+.ki-btn{width:100%;padding:11px;background:var(--gold-pale);border:1.5px solid var(--gold);border-radius:12px;font-family:inherit;font-size:14px;font-weight:600;color:#8B6914;cursor:pointer;margin-bottom:10px;}
+.ki-btn:disabled{opacity:.5;}
+
+/* MENUS */
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.meal-chip{background:var(--warm);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+.mc-del{color:#C0BBB5;font-size:16px;}
+.meal-chip-img{width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;}
+.meal-plan-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.meal-plan-row:last-child{border-bottom:none;}
+.mp-day{font-size:12px;font-weight:600;color:var(--muted);min-width:26px;}
+.mp-meal{flex:1;font-size:14px;}
+.mp-edit{background:none;border:none;font-size:15px;cursor:pointer;}
+
+/* BRAIN DUMP */
+.bd-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.bd-item:last-child{border-bottom:none;}
+.bd-prio{font-size:16px;flex-shrink:0;}
+.bd-text{flex:1;font-size:14px;line-height:1.4;}
+.bd-text.done{text-decoration:line-through;color:var(--muted);}
+.bd-actions{display:flex;gap:4px;flex-shrink:0;}
+.bd-act{background:none;border:none;font-size:16px;cursor:pointer;padding:2px;}
+.prio-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.ptab{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:13px;cursor:pointer;}
+.ptab.active{background:var(--terra);color:#fff;border-color:var(--terra);}
+
+/* MIC */
+.mic-row{display:flex;gap:8px;align-items:center;margin-top:6px;}
+.mic-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;border:1.5px solid var(--sage);background:#fff;color:var(--sage);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;}
+.mic-btn.recording{background:var(--terra);border-color:var(--terra);color:#fff;animation:pulse 1.2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.65;}}
+.mic-status{font-size:11px;color:var(--muted);font-style:italic;}
+
+/* PHOTO */
+.recipe-img{width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:12px;display:block;}
+.photo-upload-area{border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px;background:var(--cream);}
+.photo-upload-area p{font-size:13px;color:var(--muted);margin-top:6px;}
+.ki-recipe-btn{width:100%;padding:10px;background:var(--gold-pale);border:1px solid var(--gold);border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;color:#8B6914;cursor:pointer;margin-bottom:12px;}
+.ki-recipe-btn:disabled{opacity:.5;}
+.recipe-name-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink);background:var(--cream);margin-bottom:12px;}
+.recipe-name-input:focus{outline:none;border-color:var(--sage);}
+
+/* OVERLAYS */
+.overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.45);align-items:flex-end;}
+.overlay.active{display:flex;}
+.overlay-box{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px;padding-bottom:calc(20px + var(--safe-bot));}
+.overlay-title{font-size:17px;font-weight:700;margin-bottom:16px;color:var(--ink);}
+.overlay-close{float:right;background:var(--warm);border:none;border-radius:8px;padding:5px 12px;font-size:13px;cursor:pointer;}
+.picker-chip{display:inline-block;background:var(--warm);border:1px solid var(--border);border-radius:20px;padding:8px 16px;margin:4px;font-size:14px;cursor:pointer;}
+.sr-input{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:14px;color:var(--ink);background:var(--cream);width:100%;}
+.sr-input:focus{outline:none;border-color:var(--sage);}
+.settings-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.settings-row:last-child{border-bottom:none;}
+.ki-spinner{display:none;text-align:center;padding:16px;}
+.ki-spinner.active{display:block;}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--sage);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#mama-text{width:100%;min-height:180px;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;color:var(--ink);background:var(--cream);resize:none;}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="header">
+  <h1>&#127807; Mein Planer <span style="font-size:10px;opacity:.6;font-weight:400;">v3</span></h1>
+  <div class="hdr-btns">
+    <button class="hdr-btn" onclick="openHelp()">&#10067;</button>
+    <button class="hdr-btn" onclick="openMama()">&#128105;&#8205;&#128241;</button>
+    <button class="hdr-btn" onclick="openSettings()">&#9881;&#65039;</button>
+  </div>
+</div>
+<div id="main">
+
+<!-- DASHBOARD -->
+<div class="sec active" id="sec-dash">
+  <div class="dash-grid">
+    <div class="dash-card"><h4>&#128197; Woche</h4><div class="dash-big" id="d-kw">-</div><div class="dash-sub" id="d-today">-</div></div>
+    <div class="dash-card"><h4>&#127968; Zone</h4><div class="dash-big" id="d-zone-nr">-</div><div class="dash-sub" id="d-zone-name">-</div></div>
+    <div class="dash-card full"><h4>&#9989; Routinen heute</h4><div class="dash-bar-wrap"><div class="dash-bar" id="d-routine-bar" style="width:0%"></div></div><div class="progress-row"><span id="d-routine-text">0 von 0</span><span id="d-routine-pct">0%</span></div></div>
+    <div class="dash-card full"><h4>&#127869; Essensplan diese Woche</h4><div id="d-meals"></div></div>
+    <div class="dash-card full"><h4>&#9888;&#65039; TK-Vorrat</h4><div id="d-tk-alerts"></div></div>
+    <div class="dash-card full"><h4>&#128197; Termine heute &amp; diese Woche</h4><div id="d-termine"></div></div>
+    <div class="dash-card full"><h4>&#128260; Heute wiederkehrend</h4><div id="d-recurring"></div></div>
+    <div class="dash-card full"><h4>&#129529; Zone-Aufgaben</h4><div class="dash-bar-wrap"><div class="dash-bar" id="d-zone-bar" style="width:0%"></div></div><div class="progress-row"><span id="d-zone-text">0 von 0</span><span id="d-zone-pct">0%</span></div></div>
+    <div class="dash-card full"><h4>&#128205; Angepinnte Aufgaben</h4><div id="d-pinned"></div></div>
+  </div>
+  <button class="btn-full btn-sage" onclick="refreshDash()">&#8634; Aktualisieren</button>
+  <button class="btn-full btn-warm" onclick="printDashboard()" style="margin-top:6px;">&#128424;&#65039; Als PDF / Drucken</button>
+</div>
+
+<!-- WOCHE -->
+<div class="sec" id="sec-woche">
+  <div id="kw-bar">
+    <input id="kw-input" type="text" value="KW -">
+    <button class="kw-btn" onclick="neueWoche()">Neue Woche &#8634;</button>
+  </div>
+  <div id="focus-block">
+    <h3>&#127919; Focus heute</h3>
+    <select class="week-zone-sel" id="week-zone-sel" onchange="changeWeekZone(this.value)"></select>
+    <div class="focus-zone" id="focus-zone-text"></div>
+    <div id="focus-pinned"></div>
+  </div>
+  <div id="day-cards"></div>
+</div>
+
+<!-- HAUS -->
+<div class="sec" id="sec-haus">
+  <div class="sec-title">Zone diese Woche</div>
+  <div class="zone-grid" id="zone-grid"></div>
+  <div id="zone-detail" class="card" style="display:none;">
+    <div class="card-body">
+      <div class="row-label">Aufgaben abhaken</div>
+      <div id="zone-task-display"></div>
+    </div>
+  </div>
+  <div class="sec-title">Routinen</div>
+  <div class="card"><div class="card-body">
+    <div class="routine-section"><div class="routine-title">&#9728;&#65039; Morgen</div><div id="routine-morgen"></div></div>
+    <div class="routine-section"><div class="routine-title">&#127769; Abend</div><div id="routine-abend"></div></div>
+  </div></div>
+  <div class="sec-title">Wochentliche Checkliste</div>
+  <div class="card"><div class="card-body" id="check-weekly"></div></div>
+  <div class="add-row"><input class="add-input" id="add-weekly-input" placeholder="Aufgabe ..."><button class="add-btn" onclick="addCheckItem('weekly')">+</button></div>
+  <div class="sec-title">Monatliche Checkliste</div>
+  <div class="card"><div class="card-body" id="check-monthly"></div></div>
+  <div class="add-row"><input class="add-input" id="add-monthly-input" placeholder="Aufgabe ..."><button class="add-btn" onclick="addCheckItem('monthly')">+</button></div>
+  <div class="add-row" style="margin-top:6px;"><select id="add-monthly-when" style="flex:1;border:1px solid var(--border);border-radius:10px;padding:9px 8px;font-size:13px;background:#fff;color:var(--ink);"><option value="">Wann? (optional)</option><option>Anfang Monat</option><option>Mitte Monat</option><option>Ende Monat</option><option>1. Woche</option><option>2. Woche</option><option>3. Woche</option><option>4. Woche</option><option>1. Montag</option><option>1. Donnerstag</option><option>Letzter Freitag</option><option>am 1.</option><option>am 15.</option></select></div>
+</div>
+
+<!-- VORRAT -->
+<div class="sec" id="sec-vorrat">
+  <div class="sec-title">&#10052;&#65039; TK-Vorrat</div>
+  <div id="tk-list"></div>
+  <div class="add-row"><input class="add-input" id="add-tk-input" placeholder="Item ..."><button class="add-btn" onclick="addTK()">+</button></div>
+  <div class="sec-title">&#128722; Wocheneinkauf - Frisches</div>
+  <div id="shop-week-list"></div>
+  <div class="add-row"><input class="add-input" id="add-shopw-input" placeholder="Frisches Item ..."><button class="add-btn" onclick="addShopWeek()">+</button></div>
+  <button class="btn-full btn-warm" onclick="clearCheckedShop('week')" style="margin-top:8px;">Abgehakte entfernen</button>
+  <div class="sec-title">&#128230; Monatlicher Grosseinkauf</div>
+  <button class="ki-btn" id="ki-shop-btn" onclick="kiShopList()">&#10024; KI: fehlende Zutaten erganzen</button>
+  <div class="ki-spinner" id="ki-shop-spin"><div class="spinner"></div><p style="font-size:13px;color:var(--muted)">KI denkt ...</p></div>
+  <div id="shop-month-list"></div>
+  <div class="add-row">
+    <input class="add-input" id="add-shopm-input" placeholder="Item ...">
+    <select id="shopm-cat" style="border:1px solid var(--border);border-radius:10px;padding:9px 8px;font-size:13px;background:#fff;"><option>Vorrat</option><option>Fleisch</option><option>Hulsenfruchte</option><option>Konserven</option><option>Backzutaten</option><option>Sonstiges</option></select>
+    <button class="add-btn" onclick="addShopMonth()">+</button>
+  </div>
+  <button class="btn-full btn-warm" onclick="clearCheckedShop('month')" style="margin-top:8px;">Abgehakte entfernen</button>
+  <button class="btn-full btn-warm" onclick="resetMonthShop()" style="margin-top:6px;">&#8634; Grosseinkauf zurucksetzen</button>
+  <div class="sec-title">&#128203; Mealprep To-Do</div>
+  <div id="mealprep-list"></div>
+  <div class="add-row"><input class="add-input" id="add-mp-input" placeholder="Gericht ..."><button class="add-btn" onclick="addMealprep()">+</button></div>
+</div>
+
+<!-- MENUS -->
+<div class="sec" id="sec-menus">
+  <div class="sec-title">&#128197; Essensplan diese Woche</div>
+  <div class="card"><div class="card-body" id="meal-plan-body"></div></div>
+  <button class="ki-btn" id="ki-plan-btn" onclick="kiMealPlan()">&#10024; KI: Essensplan vorschlagen</button>
+  <div class="ki-spinner" id="ki-plan-spin"><div class="spinner"></div><p style="font-size:13px;color:var(--muted)">KI plant ...</p></div>
+  <div id="ki-plan-status" style="display:none;font-size:13px;padding:10px 12px;border-radius:10px;margin-bottom:10px;"></div>
+  <div class="sec-title">Gespeicherte Mahlzeiten</div>
+  <div class="chip-grid" id="meal-chips"></div>
+  <div class="add-row"><input class="add-input" id="add-meal-input" placeholder="Mahlzeit ..."><button class="add-btn" onclick="addMeal()">+</button></div>
+  <p style="font-size:12px;color:var(--muted);margin-top:8px;">Chip antippen: Foto + Rezept hinterlegen</p>
+</div>
+
+<!-- BRAIN DUMP -->
+<div class="sec" id="sec-brain">
+  <div class="prio-tabs">
+    <button class="ptab active" onclick="filterBD('all',this)">Alle</button>
+    <button class="ptab" onclick="filterBD('red',this)">&#128308;</button>
+    <button class="ptab" onclick="filterBD('orange',this)">&#128992;</button>
+    <button class="ptab" onclick="filterBD('yellow',this)">&#128993;</button>
+  </div>
+  <div id="cat-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+  <div class="add-row" style="margin-bottom:6px;">
+    <input class="add-input" id="add-bd-input" placeholder="Aufgabe ...">
+    <select id="bd-prio-sel" style="border:1px solid var(--border);border-radius:10px;padding:9px 8px;font-size:14px;background:#fff;"><option value="none">&#9675;</option><option value="red">&#128308;</option><option value="orange">&#128992;</option><option value="yellow">&#128993;</option></select>
+    <button class="add-btn" onclick="addBD()">+</button>
+  </div>
+  <div class="mic-row" style="margin-bottom:12px;">
+    <button class="mic-btn" id="mic-bd-btn" onclick="toggleMic('add-bd-input','mic-bd-btn','mic-bd-status')">&#127897;&#65039; Sprechen</button>
+    <span class="mic-status" id="mic-bd-status">Antippen zum Diktieren</span>
+  </div>
+  <div id="bd-list"></div>
+  <div class="sec-title">&#128451;&#65039; Orga-Sammelliste (Mi = Orga-Stunde)</div>
+  <div id="orga-list"></div>
+  <div class="add-row">
+    <input class="add-input" id="add-orga-input" placeholder="Termin, Auto, Arzt, Garten, gro\u00dfes To-Do ...">
+    <button class="add-btn" onclick="addOrga()">+</button>
+  </div>
+  <div class="sec-title">&#128260; Wiederkehrende Aufgaben</div>
+  <div id="recurring-list"></div>
+  <div class="add-row">
+    <input class="add-input" id="add-rec-input" placeholder="Aufgabe ...">
+    <select id="rec-day-sel" style="border:1px solid var(--border);border-radius:10px;padding:9px 8px;font-size:14px;background:#fff;"><option value="0">Mo</option><option value="1">Di</option><option value="2">Mi</option><option value="3">Do</option><option value="4">Fr</option><option value="5">Sa</option><option value="6">So</option></select>
+    <button class="add-btn" onclick="addRecurring()">+</button>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<div id="tabbar">
+  <button class="tb active" onclick="showTab('dash',this)"><span class="ico">&#127968;</span>Start</button>
+  <button class="tb" onclick="showTab('woche',this)"><span class="ico">&#128197;</span>Woche</button>
+  <button class="tb" onclick="showTab('haus',this)"><span class="ico">&#127968;</span>Haus</button>
+  <button class="tb" onclick="showTab('vorrat',this)"><span class="ico">&#10052;&#65039;</span>Vorrat</button>
+  <button class="tb" onclick="showTab('menus',this)"><span class="ico">&#127869;</span>Menus</button>
+  <button class="tb" onclick="showTab('brain',this)"><span class="ico">&#129504;</span>Dump</button>
+</div>
+</div>
+
+<!-- OVERLAYS -->
+<div class="overlay" id="overlay-picker">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-picker')">&#10005;</button>
+    <div class="overlay-title">Mahlzeit wahlen</div>
+    <div id="picker-chips"></div>
+    <div class="add-row" style="margin-top:12px;"><input class="add-input" id="picker-custom" placeholder="Direkt eingeben ..."><button class="add-btn" onclick="pickerCustom()">OK</button></div>
+  </div>
+</div>
+<div class="overlay" id="overlay-planpicker">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-planpicker')">&#10005;</button>
+    <div class="overlay-title" id="planpicker-title">Mahlzeit fur Tag</div>
+    <div id="planpicker-chips"></div>
+    <div class="add-row" style="margin-top:12px;"><input class="add-input" id="planpicker-custom" placeholder="Direkt eingeben ..."><button class="add-btn" onclick="planPickerCustom()">OK</button></div>
+  </div>
+</div>
+<div class="overlay" id="overlay-recipe">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-recipe')">&#10005;</button>
+    <div class="overlay-title">&#128214; Rezept</div>
+    <div class="row-label" style="margin-bottom:6px;">Name</div>
+    <input class="recipe-name-input" id="recipe-name-input" placeholder="Gerichtsname ...">
+    <div id="recipe-img-preview"></div>
+    <div class="photo-upload-area" onclick="document.getElementById('recipe-photo-input').click()">
+      <div style="font-size:28px;">&#128247;</div>
+      <p>Foto antippen - Kamera oder Galerie</p>
+    </div>
+    <input type="file" id="recipe-photo-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(this)">
+    <button class="ki-recipe-btn" id="ki-recipe-btn" onclick="kiRecognizeRecipe()" disabled>&#10024; KI erkennt Gericht und schlagt Rezept vor</button>
+    <div class="ki-spinner" id="ki-recipe-spin"><div class="spinner"></div><p style="font-size:13px;color:var(--muted)">KI analysiert ...</p></div>
+    <div class="row-label">Zutaten</div>
+    <textarea class="ef" id="recipe-ingredients" rows="4" placeholder="Zutaten ..."></textarea>
+    <div class="mic-row" style="margin-bottom:10px;">
+      <button class="mic-btn" id="mic-ing-btn" onclick="toggleMic('recipe-ingredients','mic-ing-btn','mic-ing-status')">&#127897;&#65039;</button>
+      <span class="mic-status" id="mic-ing-status">Zutaten diktieren</span>
+    </div>
+    <div class="row-label">Zubereitung</div>
+    <textarea class="ef" id="recipe-steps" rows="5" placeholder="Schritte ..."></textarea>
+    <div class="mic-row" style="margin-bottom:12px;">
+      <button class="mic-btn" id="mic-steps-btn" onclick="toggleMic('recipe-steps','mic-steps-btn','mic-steps-status')">&#127897;&#65039;</button>
+      <span class="mic-status" id="mic-steps-status">Zubereitung diktieren</span>
+    </div>
+    <button class="btn-full btn-sage" onclick="saveRecipe()">Rezept speichern</button>
+  </div>
+</div>
+<div class="overlay" id="overlay-mama">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-mama')">&#10005;</button>
+    <div class="overlay-title">Mama-Ansicht</div>
+    <textarea id="mama-text" readonly></textarea>
+    <button class="btn-full btn-sage" style="margin-top:10px;" onclick="copyMama()">Kopieren fur WhatsApp</button>
+  </div>
+</div>
+<div class="overlay" id="overlay-move">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-move')">&#10005;</button>
+    <div class="overlay-title">Wohin verschieben?</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;" id="move-itemtext"></div>
+    <div class="sec-title">Schubladen</div>
+    <div id="move-targets"></div>
+    <div class="sec-title">Kategorie zuweisen</div>
+    <div id="move-categories"></div>
+    <div class="add-row" style="margin-top:8px;">
+      <input class="add-input" id="add-cat-input" placeholder="Neue Kategorie (z.B. Kochen) ...">
+      <button class="add-btn" onclick="addCategory()">+</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-help">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-help')">&#10005;</button>
+    <div class="overlay-title">&#127807; So benutze ich mein System</div>
+    <div style="background:#F7F0E6;border-left:3px solid #C9A46B;padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;line-height:1.5;">
+      <b style="color:#8B6914;">Der eine Satz:</b> Alles fliesst in EINEN Eingang (Dump). Einmal pro Woche sortiere ich in feste Schubladen. Den Rest der Woche schaue ich nur auf zwei Dinge.
+    </div>
+    <div class="sec-title">Sonntag &middot; 15 Min &middot; Sortier-Moment</div>
+    <div style="font-size:13px;line-height:1.7;margin-bottom:14px;">
+      <b>1. Dump leeren.</b> Jede Zeile bekommt eine Heimat: grosse Lebenssache &rarr; Orga-Liste &middot; diese Woche dran &rarr; Prioritaet &#128308;&#128992;&#128993; &middot; Essen &rarr; Essensplan.<br><br>
+      <b>2. Woche fuellen.</b> Nur die &#128308;-Sachen fest auf Tage. Essensplan setzen. Zone checken.<br><br>
+      <b>3. Sichern.</b> Backup speichern (im &#9881;&#65039;-Menue) + Uebersicht aufhaengen.
+    </div>
+    <div class="sec-title">Alltag &mdash; nur ZWEI Blicke</div>
+    <div style="font-size:13px;line-height:1.7;margin-bottom:14px;">
+      <b>&#127968; Morgens:</b> Start-Tab. Welcher Tag, welche Zone, was ist der eine Fokus?<br><br>
+      <b>&#129504; Abends 21:00:</b> Dump-Tab. Was eingefallen ist, reinwerfen. NICHT sortieren &mdash; das macht Sonntag.
+    </div>
+    <div style="background:#E8F0E8;border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:#5C7A5C;">
+      Ich muss nicht alles schaffen. Ich muss nur wissen, wo alles liegt &mdash; und das tue ich jetzt. &#127807;
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-settings">
+  <div class="overlay-box">
+    <button class="overlay-close" onclick="closeOverlay('overlay-settings')">&#10005;</button>
+    <div class="overlay-title">&#9881;&#65039; Einstellungen</div>
+    <div class="sec-title">Zonen</div>
+    <div id="settings-zones"></div>
+    <button class="btn-full btn-warm" style="margin-top:6px;" onclick="resetZones()">&#8634; Standard-Zonen</button>
+    <div class="sec-title">Routinen Morgen</div>
+    <div id="settings-routinen-morgen"></div>
+    <div class="add-row"><input class="add-input" id="add-rm-input" placeholder="Morgenroutine ..."><button class="add-btn" onclick="addRoutine('morgen')">+</button></div>
+    <div class="sec-title">Routinen Abend</div>
+    <div id="settings-routinen-abend"></div>
+    <div class="add-row"><input class="add-input" id="add-ra-input" placeholder="Abendroutine ..."><button class="add-btn" onclick="addRoutine('abend')">+</button></div>
+    <div class="sec-title">Backup &amp; Sicherung</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;">Die App speichert auf dem Handy. Sichere Sonntag dein Backup &mdash; so geht nichts verloren.</div>
+    <button class="btn-full btn-sage" onclick="exportBackup()">&#128190; Backup speichern (Datei)</button>
+    <button class="btn-full btn-warm" style="margin-top:6px;" onclick="document.getElementById('import-file').click()">&#128229; Backup laden</button>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none;" onchange="importBackup(this)">
+    <div class="sec-title">Daten</div>
+    <button class="btn-full btn-warm" onclick="if(confirm('Alle Daten loschen?'))clearAll()">Alle Daten loschen</button>
+  </div>
+</div>
+
+<script>
+const DZ=[
+  {name:"Eingang & Flur",tasks:"Boden fegen,Spiegel putzen,Schuhe sortieren,Post sortieren"},
+  {name:"Kuche",tasks:"Schranke auswischen,Kuhlschrank ausmisten,Herd reinigen,Backofen reinigen"},
+  {name:"Badezimmer & WC",tasks:"Kacheln schrubben,Armaturen polieren,Schranke ausraumen,Boden wischen"},
+  {name:"Schlafzimmer",tasks:"Schrank aufraumen,Bettwasche wechseln,Staub wischen,Boden saugen"},
+  {name:"Wohnzimmer",tasks:"Regale abstauben,Polster entstauben,Fenster putzen,Boden wischen"},
+  {name:"Kinderzimmer",tasks:"Spielzeug sortieren,Schrank aufraumen,Boden saugen,Staub wischen"},
+  {name:"Balkon & Aussen",tasks:"Pflanzen giessen,Mobel abwischen,Boden fegen,Deko checken"},
+  {name:"Buro & Ablagen",tasks:"Papiere sortieren,Ablage leeren,Schreibtisch wischen,Kabel ordnen"},
+];
+const DR={morgen:["Bett machen","1 Runde aufraumen","Kuche kurz wischen"],abend:["Kuche aufraumen","Sachen fur morgen richten","Kurz durchfegen"]};
+const DM=["Gulasch","Chili mild","Kurbis-Curry","Linsen-Lasagne","Kartoffelsuppe","Hahnchen-Schmortopf","Spatzle mit Sose","Polenta-Sticks","Mini-Pancakes","Gemuse-Muffins"];
+const DMSLIST=[
+  {name:"Rindgulasch 1kg",cat:"Fleisch",done:false},{name:"Hahnchenschenkel 1,5kg",cat:"Fleisch",done:false},{name:"Hackfleisch 500g",cat:"Fleisch",done:false},
+  {name:"Rote Linsen 500g",cat:"Hulsenfruchte",done:false},{name:"Kichererbsen 3 Dosen",cat:"Hulsenfruchte",done:false},{name:"Rote Bohnen 2 Dosen",cat:"Hulsenfruchte",done:false},
+  {name:"Geschalte Tomaten 6 Dosen",cat:"Konserven",done:false},{name:"Kokosmilch 4 Dosen",cat:"Konserven",done:false},{name:"Tomatenmark 2 Tuben",cat:"Konserven",done:false},
+  {name:"Pasta 500g",cat:"Vorrat",done:false},{name:"Reis 1kg",cat:"Vorrat",done:false},{name:"Haferflocken 2kg",cat:"Vorrat",done:false},
+  {name:"Mehl 1kg",cat:"Vorrat",done:false},{name:"Olivenol 1L",cat:"Vorrat",done:false},{name:"Gemuse-Bruhe Paste",cat:"Vorrat",done:false},
+  {name:"Datteln 250g",cat:"Backzutaten",done:false},{name:"Nussmuss 1 Glas",cat:"Backzutaten",done:false},{name:"Chiasamen 200g",cat:"Backzutaten",done:false},
+];
+const DWLIST=[{name:"Milch 2-3L",done:false},{name:"Eier 12 Stk",done:false},{name:"Butter 250g",done:false},{name:"Joghurt 500g",done:false},{name:"Vollkornbrot",done:false},{name:"Bananen",done:false},{name:"Saisonales Obst",done:false},{name:"Frisches Gemuse",done:false}];
+const DAYS=["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const MINITASKS=["Haushalts-Reset 15 Min.","Abends Waesche an","1 Orga-Ding (Orga-Stunde)","Trockner + zusammenlegen","Einkauf Frisches","",""];
+const PC={red:"#C0392B",orange:"#E67E22",yellow:"#F1C40F"};
+const PE={none:"\u25cb",red:"\uD83D\uDD34",orange:"\uD83D\uDFE0",yellow:"\uD83D\uDFE1"};
+
+// Storage mit Fallback: localStorage wenn verfuegbar, sonst In-Memory
+var _memStore={};
+var _hasLS=(function(){try{var t="__t";localStorage.setItem(t,"1");localStorage.removeItem(t);return true;}catch(e){return false;}})();
+function load(k,d){
+  try{
+    var v=_hasLS?localStorage.getItem(k):(_memStore[k]!==undefined?_memStore[k]:null);
+    return v?JSON.parse(v):d;
+  }catch(e){return d;}
+}
+function save(k,v){
+  try{
+    var s=JSON.stringify(v);
+    if(_hasLS)localStorage.setItem(k,s);
+    else _memStore[k]=s;
+  }catch(e){_memStore[k]=JSON.stringify(v);}
+}
+
+var zones=load("zones",DZ),routines=load("routines",DR),weekData=load("weekData",{}),
+    checkWeekly=load("checkWeekly",[{text:"Wischen",done:false},{text:"Bad putzen",done:false},{text:"Staubsaugen",done:false}]),
+    checkMonthly=load("checkMonthly",[{text:"Kuhlschrank ausmisten",done:false},{text:"Fenster putzen",done:false}]),
+    routineDone=load("routineDone",{}),zoneTasks=load("zoneTasks",{}),
+    tkItems=load("tkItems",[{name:"Gulasch",count:4},{name:"Kurbissuppe",count:2},{name:"Gemuse-Muffins",count:8},{name:"Tomatenbasis",count:3}]),
+    shopWeek=load("shopWeek",JSON.parse(JSON.stringify(DWLIST))),
+    shopMonth=load("shopMonth",JSON.parse(JSON.stringify(DMSLIST))),
+    mealprepList=load("mealprepList",[]),meals=load("meals",DM),recipes=load("recipes",{}),
+    mealPlan=load("mealPlan",{}),bdItems=load("bdItems",[]),recurring=load("recurring",[{text:"Mull rausstellen",day:6},{text:"Wasche",day:0}]),
+    bdCategories=load("bdCategories",["Haus","Termine","Arbeit","Yasha","Finanzen/Steuer","Privat"]),
+    orgaList=load("orgaList",[
+      {text:"Steuer / DATEV - monatliche Ablage",done:false},
+      {text:"Notfallordner anlegen / aktualisieren",done:false},
+      {text:"Vorsorgevollmacht / Testament / Vermoegensverwaltung",done:false},
+      {text:"Arzttermine (Yasha, ich)",done:false},
+      {text:"Auto: TUEV / Werkstatt / Termine",done:false},
+      {text:"Garten: Pflanzen umtopfen, Beetplan",done:false},
+      {text:"Finanzen: monatlicher Check",done:false}
+    ]),
+    activeZone=load("activeZone",0),weekZoneIdx=load("weekZoneIdx",0),currentKW=load("currentKW",getKW(new Date())),
+    bdFilter="all",pickerTarget=null,planPickerTarget=null,recipeTarget=null,currentPhotoBase64=null,
+    recognition=null,isRecording=false,activeRecBtn=null;
+
+function getKW(d){var jan4=new Date(d.getFullYear(),0,4),s=new Date(jan4);s.setDate(jan4.getDate()-(jan4.getDay()||7)+1);return Math.ceil((d-s)/(86400000*7))+1;}
+function getMon(d){var day=d.getDay()||7,m=new Date(d);m.setDate(d.getDate()-day+1);m.setHours(0,0,0,0);return m;}
+function fmtD(d){return d.getDate()+"."+(d.getMonth()+1)+".";}
+
+function showTab(name,btn){
+  document.querySelectorAll(".sec").forEach(function(s){s.classList.remove("active");});
+  document.querySelectorAll(".tb").forEach(function(b){b.classList.remove("active");});
+  document.getElementById("sec-"+name).classList.add("active");
+  btn.classList.add("active");
+  if(name==="dash")refreshDash();
+  if(name==="woche")renderWeek();
+  if(name==="haus")renderHaus();
+  if(name==="vorrat")renderVorrat();
+  if(name==="menus")renderMenus();
+  if(name==="brain")renderBrain();
+}
+
+function refreshDash(){
+  var today=new Date();
+  document.getElementById("d-kw").textContent="KW "+currentKW;
+  document.getElementById("d-today").textContent=DAYS[(today.getDay()||7)-1]+", "+fmtD(today);
+  var zi=weekZoneIdx%zones.length;
+  document.getElementById("d-zone-nr").textContent="Zone "+(zi+1);
+  document.getElementById("d-zone-name").textContent=zones[zi]?zones[zi].name:"-";
+  var mr=routines.morgen||[],ar=routines.abend||[];
+  var total=mr.length+ar.length;
+  var dm=(routineDone.morgen||[]).filter(Boolean).length+(routineDone.abend||[]).filter(Boolean).length;
+  var pct=total?Math.round(dm/total*100):0;
+  document.getElementById("d-routine-bar").style.width=pct+"%";
+  document.getElementById("d-routine-text").textContent=dm+" von "+total;
+  document.getElementById("d-routine-pct").textContent=pct+"%";
+  var monday=getMon(today),rows="";
+  DAYS.forEach(function(d,i){
+    var m=mealPlan[i]||"-";
+    var dd=new Date(monday);dd.setDate(monday.getDate()+i);
+    var isT=dd.toDateString()===today.toDateString();
+    rows+="<div class=\"dash-meal-row\" style=\""+( isT?"font-weight:600;":"")+"\">"+"<span class=\"dash-day-label\">"+d.slice(0,2)+"</span><span>"+m+"</span></div>";
+  });
+  document.getElementById("d-meals").innerHTML=rows;
+  var alerts=tkItems.filter(function(i){return i.count<=1;});
+  document.getElementById("d-tk-alerts").innerHTML=alerts.length
+    ?alerts.map(function(i){return "<div class=\"dash-alert\">"+i.name+": nur noch "+i.count+" Port.</div>";}).join("")
+    :"<div class=\"dash-ok\">TK-Vorrat in Ordnung</div>";
+  var pinned=bdItems.filter(function(i){return i.pinned&&!i.done;}).slice(0,5);
+  document.getElementById("d-pinned").innerHTML=pinned.length
+    ?pinned.map(function(i){return "<div class=\"focus-item\"><div class=\"prio-dot\" style=\"background:"+(PC[i.prio]||"#999")+"\"></div><span>"+i.text+"</span></div>";}).join("")
+    :"<div style=\"font-size:13px;color:var(--muted)\">Keine angepinnten Aufgaben</div>";
+
+  // --- Termine heute & diese Woche ---
+  var todayIdx=(today.getDay()||7)-1;
+  var termHtml="";
+  for(var ti=0;ti<7;ti++){
+    var dT=weekData[ti]||{};
+    if(dT.termin&&dT.termin.trim()){
+      var isT=ti===todayIdx;
+      termHtml+="<div style=\"display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:13px;"+(isT?"font-weight:600":"")+"\"><span style=\"min-width:28px;color:var(--muted);font-size:11px\">"+DAYS[ti].slice(0,2)+(isT?"*":"")+"</span><span>"+dT.termin+"</span></div>";
+    }
+  }
+  document.getElementById("d-termine").innerHTML=termHtml||"<div style=\"font-size:13px;color:var(--muted)\">Keine Termine (im Woche-Tab eintragen)</div>";
+  // --- Heute wiederkehrend ---
+  var recToday=recurring.filter(function(r){return parseInt(r.day)===todayIdx;});
+  document.getElementById("d-recurring").innerHTML=recToday.length?recToday.map(function(r){return "<div style=\"font-size:13px;padding:3px 0\">\u25cb "+r.text+"</div>";}).join(""):"<div style=\"font-size:13px;color:var(--muted)\">Heute nichts Wiederkehrendes</div>";
+  // --- Zone-Aufgaben Fortschritt ---
+  var ztasks=zones[zi]?zones[zi].tasks.split(",").map(function(t){return t.trim();}).filter(Boolean):[];
+  var zdone=(zoneTasks[zi]||[]).filter(Boolean).length;
+  var ztotal=ztasks.length;
+  var zpct=ztotal?Math.round(zdone/ztotal*100):0;
+  document.getElementById("d-zone-bar").style.width=zpct+"%";
+  document.getElementById("d-zone-text").textContent=zdone+" von "+ztotal;
+  document.getElementById("d-zone-pct").textContent=zpct+"%";
+}
+
+function renderWeek(){
+  document.getElementById("kw-input").value="KW "+currentKW;
+  var sel=document.getElementById("week-zone-sel");
+  sel.innerHTML=zones.map(function(z,i){return "<option value=\""+i+"\""+( i==weekZoneIdx?" selected":"")+">Zone "+(i+1)+": "+z.name+"</option>";}).join("");
+  var z=zones[weekZoneIdx]||zones[0];
+  document.getElementById("focus-zone-text").textContent="Zone: "+z.name;
+  var pinned=bdItems.filter(function(i){return i.pinned&&!i.done;}).slice(0,3);
+  document.getElementById("focus-pinned").innerHTML=pinned.length
+    ?pinned.map(function(i){return "<div class=\"focus-item\"><div class=\"prio-dot\" style=\"background:"+(PC[i.prio]||"#999")+"\"></div><span>"+i.text+"</span></div>";}).join("")
+    :"<div style=\"font-size:12px;color:#B8A87A;margin-top:4px\">Keine angepinnten Aufgaben</div>";
+  var today=new Date();today.setHours(0,0,0,0);
+  var monday=getMon(today);
+  var container=document.getElementById("day-cards");
+  container.innerHTML="";
+  DAYS.forEach(function(name,i){
+    var dayDate=new Date(monday);dayDate.setDate(monday.getDate()+i);
+    var isToday=dayDate.getTime()===today.getTime();
+    var d=weekData[i]||{};
+    var meal=mealPlan[i]||d.meal||"";
+    var rec=recurring.filter(function(r){return parseInt(r.day)===i;});
+    var card=document.createElement("div");
+    card.className="card"+(isToday?" today":"");
+    card.innerHTML="<div class=\"card-head\" onclick=\"toggleCard(this)\"><div class=\"day-name\">"+name+"</div><div class=\"day-date\">"+fmtD(dayDate)+(isToday?" · Heute":"")+"</div></div>"
+      +"<div class=\"card-body\"><div><div class=\"row-label\">Mahlzeit</div><button class=\"meal-btn\" onclick=\"openPicker("+i+",event)\">"+(meal||"Tippen...")+"</button></div>"
+      +"<div><div class=\"row-label\">Termine & Notizen</div><textarea class=\"ef\" rows=\"2\" placeholder=\"Termine, Besonderes ...\" onblur=\"saveDay("+i+",'termin',this.value)\">"+(d.termin||"")+"</textarea></div>"
+      +(MINITASKS[i]?"<div style=\"font-size:11px;color:#B85C38;margin-top:2px\">✨ Mini: "+MINITASKS[i]+"</div>":"")
+      +(rec.length?"<div style=\"font-size:12px;color:var(--muted)\">"+rec.map(function(r){return r.text;}).join(" · ")+"</div>":"")
+      +"</div>";
+    if(!isToday)card.classList.add("collapsed");
+    container.appendChild(card);
+  });
+}
+
+function changeWeekZone(v){weekZoneIdx=parseInt(v);save("weekZoneIdx",weekZoneIdx);renderWeek();}
+function toggleCard(h){h.parentElement.classList.toggle("collapsed");}
+function saveDay(idx,field,val){if(!weekData[idx])weekData[idx]={};weekData[idx][field]=val;save("weekData",weekData);}
+function neueWoche(){
+  if(!confirm("Neue Woche starten? Routinen und Zonenaufgaben werden zuruckgesetzt."))return;
+  currentKW=getKW(new Date());save("currentKW",currentKW);
+  routineDone={};save("routineDone",routineDone);
+  zoneTasks={};save("zoneTasks",zoneTasks);
+  weekData={};save("weekData",weekData);
+  mealPlan={};save("mealPlan",mealPlan);
+  weekZoneIdx=(weekZoneIdx+1)%zones.length;save("weekZoneIdx",weekZoneIdx);
+  renderWeek();
+}
+
+function renderHaus(){
+  var zg=document.getElementById("zone-grid");zg.innerHTML="";
+  zones.forEach(function(z,i){
+    var el=document.createElement("div");
+    el.className="zone-chip"+(i===activeZone?" active":"");
+    el.innerHTML="<div class=\"zn\">Zone "+(i+1)+"</div><div class=\"zt\">"+z.name+"</div>";
+    el.onclick=function(){activeZone=i;save("activeZone",activeZone);renderHaus();};
+    zg.appendChild(el);
+  });
+  var zd=document.getElementById("zone-detail");
+  var zt=document.getElementById("zone-task-display");
+  if(zones[activeZone]){
+    zd.style.display="block";
+    var tasks=zones[activeZone].tasks.split(",").map(function(t){return t.trim();}).filter(Boolean);
+    var doneArr=zoneTasks[activeZone]||[];
+    zt.innerHTML=tasks.map(function(t,i){
+      return "<div class=\"zone-task-item\"><div class=\"cb "+(doneArr[i]?"done":"")+"\" onclick=\"toggleZoneTask("+activeZone+","+i+")\"></div><div class=\"ztask-text "+(doneArr[i]?"done":"")+"\">"+t+"</div></div>";
+    }).join("");
+  }
+  renderRoutines("morgen");renderRoutines("abend");
+  renderChecklist("weekly");renderChecklist("monthly");
+}
+
+function toggleZoneTask(zi,ti){
+  if(!zoneTasks[zi])zoneTasks[zi]=[];
+  zoneTasks[zi][ti]=!zoneTasks[zi][ti];
+  save("zoneTasks",zoneTasks);renderHaus();
+}
+function renderRoutines(type){
+  var list=routines[type]||[],done=routineDone[type]||[];
+  document.getElementById("routine-"+type).innerHTML=list.map(function(r,i){
+    return "<div class=\"check-item\"><div class=\"cb "+(done[i]?"done":"")+"\" onclick=\"toggleRoutine('"+type+"',"+i+")\"></div><div class=\"ci-text "+(done[i]?"done":"")+"\">"+ r+"</div></div>";
+  }).join("");
+}
+function toggleRoutine(type,i){if(!routineDone[type])routineDone[type]=[];routineDone[type][i]=!routineDone[type][i];save("routineDone",routineDone);renderRoutines(type);}
+function renderChecklist(which){
+  var data=which==="weekly"?checkWeekly:checkMonthly;
+  document.getElementById("check-"+which).innerHTML=data.map(function(it,i){
+    var whenBadge=(which==="monthly"&&it.when)?" <span style=\"font-size:10px;background:#F5E8E2;color:#B85C38;border-radius:7px;padding:1px 7px;margin-left:4px\">"+it.when+"</span>":"";
+    return "<div class=\"check-item\"><div class=\"cb "+(it.done?"done":"")+"\" onclick=\"toggleCheck('"+which+"',"+i+")\"></div><div class=\"ci-text "+(it.done?"done":"")+"\">"+it.text+whenBadge+"</div><button class=\"del-btn\" onclick=\"delCheck('"+which+"',"+i+")\">x</button></div>";
+  }).join("");
+}
+function toggleCheck(which,i){var arr=which==="weekly"?checkWeekly:checkMonthly;arr[i].done=!arr[i].done;save(which==="weekly"?"checkWeekly":"checkMonthly",arr);renderChecklist(which);}
+function delCheck(which,i){if(which==="weekly"){checkWeekly.splice(i,1);save("checkWeekly",checkWeekly);}else{checkMonthly.splice(i,1);save("checkMonthly",checkMonthly);}renderChecklist(which);}
+function addCheckItem(which){var inp=document.getElementById("add-"+which+"-input");if(!inp.value.trim())return;var arr=which==="weekly"?checkWeekly:checkMonthly;var item={text:inp.value.trim(),done:false};if(which==="monthly"){var w=document.getElementById("add-monthly-when");if(w&&w.value)item.when=w.value;if(w)w.value="";}arr.push(item);save(which==="weekly"?"checkWeekly":"checkMonthly",arr);inp.value="";renderChecklist(which);}
+
+function renderVorrat(){renderTK();renderShopWeek();renderShopMonth();renderMealprep();}
+function renderTK(){
+  document.getElementById("tk-list").innerHTML=tkItems.map(function(it,i){
+    var cls=it.count===0?"zero":it.count===1?"low":"ok";
+    return "<div class=\"tk-item\"><div class=\"tk-name\">"+it.name+"</div><div class=\"tk-count "+cls+"\">"+it.count+"</div><div class=\"tk-btns\"><button class=\"tk-btn\" onclick=\"adjTK("+i+",-1)\">-</button><button class=\"tk-btn\" onclick=\"adjTK("+i+",1)\">+</button><button class=\"del-btn\" onclick=\"delTK("+i+")\">x</button></div></div>";
+  }).join("");
+}
+function adjTK(i,d){tkItems[i].count=Math.max(0,tkItems[i].count+d);save("tkItems",tkItems);renderTK();}
+function delTK(i){tkItems.splice(i,1);save("tkItems",tkItems);renderTK();}
+function addTK(){var inp=document.getElementById("add-tk-input");if(!inp.value.trim())return;tkItems.push({name:inp.value.trim(),count:1});save("tkItems",tkItems);inp.value="";renderTK();}
+function renderShopWeek(){
+  document.getElementById("shop-week-list").innerHTML=shopWeek.map(function(it,i){
+    return "<div class=\"shop-item "+(it.done?"checked":"")+"\" onclick=\"toggleShopItem('week',"+i+")\"><div class=\"shop-cb\"></div><div class=\"si-name\">"+it.name+"</div><button class=\"del-btn\" onclick=\"event.stopPropagation();delShopItem('week',"+i+")\">x</button></div>";
+  }).join("");
+}
+function renderShopMonth(){
+  var cats=[...new Set(shopMonth.map(function(i){return i.cat;}))];
+  document.getElementById("shop-month-list").innerHTML=cats.map(function(cat){
+    return "<div class=\"shop-cat-header\">"+cat+"</div>"+shopMonth.filter(function(i){return i.cat===cat;}).map(function(it){
+      var gi=shopMonth.indexOf(it);
+      return "<div class=\"shop-item "+(it.done?"checked":"")+"\" onclick=\"toggleShopItem('month',"+gi+")\"><div class=\"shop-cb\"></div><div class=\"si-name\">"+it.name+"</div><button class=\"del-btn\" onclick=\"event.stopPropagation();delShopItem('month',"+gi+")\">x</button></div>";
+    }).join("");
+  }).join("");
+}
+function toggleShopItem(list,i){if(list==="week"){shopWeek[i].done=!shopWeek[i].done;save("shopWeek",shopWeek);renderShopWeek();}else{shopMonth[i].done=!shopMonth[i].done;save("shopMonth",shopMonth);renderShopMonth();}}
+function delShopItem(list,i){if(list==="week"){shopWeek.splice(i,1);save("shopWeek",shopWeek);renderShopWeek();}else{shopMonth.splice(i,1);save("shopMonth",shopMonth);renderShopMonth();}}
+function addShopWeek(){var inp=document.getElementById("add-shopw-input");if(!inp.value.trim())return;shopWeek.push({name:inp.value.trim(),done:false});save("shopWeek",shopWeek);inp.value="";renderShopWeek();}
+function addShopMonth(){var inp=document.getElementById("add-shopm-input");var cat=document.getElementById("shopm-cat").value;if(!inp.value.trim())return;shopMonth.push({name:inp.value.trim(),cat:cat,done:false});save("shopMonth",shopMonth);inp.value="";renderShopMonth();}
+function clearCheckedShop(list){if(list==="week"){shopWeek=shopWeek.filter(function(i){return !i.done;});save("shopWeek",shopWeek);renderShopWeek();}else{shopMonth=shopMonth.filter(function(i){return !i.done;});save("shopMonth",shopMonth);renderShopMonth();}}
+function resetMonthShop(){if(!confirm("Grosseinkaufsliste zurucksetzen?"))return;shopMonth=JSON.parse(JSON.stringify(DMSLIST));save("shopMonth",shopMonth);renderShopMonth();}
+async function kiShopList(){
+  var btn=document.getElementById("ki-shop-btn"),spin=document.getElementById("ki-shop-spin"),msg=spin.querySelector("p");
+  var tkStr=tkItems.map(function(i){return i.name+" ("+i.count+")";}).join(", ")||"nichts";
+  var ex=shopMonth.map(function(i){return i.name;}).join(", ");
+  btn.disabled=true;spin.classList.add("active");msg.textContent="KI denkt ...";
+  try{
+    var res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:700,
+        messages:[{role:"user",content:"TK-Vorrat: "+tkStr+". Bereits auf Liste: "+ex+". Erstelle erganzende Einkaufsliste fur monatlichen Grosseinkauf (3 Personen, Kleinkind, Mealprep). Antworte AUSSCHLIESSLICH mit einem JSON-Array, keine Erklaerung, keine Backticks. Objekte mit Feldern name und cat (cat aus Vorrat, Fleisch, Hulsenfruchte, Konserven, Backzutaten). Max 10 neue Items."}]})
+    });
+    if(!res.ok){var et=await res.text();msg.textContent="Status "+res.status+": "+et.slice(0,140);btn.disabled=false;return;}
+    var data=await res.json();
+    if(data.error){msg.textContent="API: "+(data.error.message||"Fehler");btn.disabled=false;return;}
+    var raw=extractKIText(data);
+    if(!raw){msg.textContent="Struktur: "+JSON.stringify(data).slice(0,160);btn.disabled=false;return;}
+    var items=parseKIJson(raw,"arr");
+    if(!items){msg.textContent="Kein JSON: "+raw.slice(0,120);btn.disabled=false;return;}
+    items.forEach(function(it){shopMonth.push({name:it.name,cat:it.cat||"Sonstiges",done:false});});
+    save("shopMonth",shopMonth);renderShopMonth();
+    spin.classList.remove("active");msg.textContent="KI denkt ...";btn.disabled=false;return;
+  }catch(e){msg.textContent="Fehler: "+e.message;btn.disabled=false;return;}
+}
+function renderMealprep(){
+  document.getElementById("mealprep-list").innerHTML=mealprepList.map(function(it,i){
+    return "<div class=\"check-item\"><div class=\"cb "+(it.done?"done":"")+"\" onclick=\"toggleMP("+i+")\"></div><div class=\"ci-text "+(it.done?"done":"")+"\">"+it.text+"</div><button class=\"del-btn\" onclick=\"delMP("+i+")\">x</button></div>";
+  }).join("");
+}
+function toggleMP(i){mealprepList[i].done=!mealprepList[i].done;save("mealprepList",mealprepList);renderMealprep();}
+function delMP(i){mealprepList.splice(i,1);save("mealprepList",mealprepList);renderMealprep();}
+function addMealprep(){var inp=document.getElementById("add-mp-input");if(!inp.value.trim())return;mealprepList.push({text:inp.value.trim(),done:false});save("mealprepList",mealprepList);inp.value="";renderMealprep();}
+
+function renderMenus(){
+  var body=document.getElementById("meal-plan-body");
+  body.innerHTML=DAYS.map(function(d,i){
+    return "<div class=\"meal-plan-row\"><span class=\"mp-day\">"+d.slice(0,2)+"</span><span class=\"mp-meal\">"+(mealPlan[i]||"-")+"</span><button class=\"mp-edit\" onclick=\"openPlanPicker("+i+")\">pencil</button></div>";
+  }).join("");
+  var el=document.getElementById("meal-chips");
+  el.innerHTML=meals.map(function(m,i){
+    var r=recipes[m]||{};
+    var img=r.photo?"<img class=\"meal-chip-img\" src=\""+r.photo+"\">":"";
+    return "<div class=\"meal-chip\" onclick=\"openRecipe('"+m.replace(/'/g,"\'")+"')\">" +img+m+"<span class=\"mc-del\" onclick=\"event.stopPropagation();delMeal("+i+")\">x</span></div>";
+  }).join("")+"<div class=\"meal-chip\" onclick=\"openNewRecipe()\" style=\"border-style:dashed;color:var(--muted)\">+ Neu</div>";
+}
+function addMeal(){var inp=document.getElementById("add-meal-input");if(!inp.value.trim())return;meals.push(inp.value.trim());save("meals",meals);inp.value="";renderMenus();}
+function delMeal(i){meals.splice(i,1);save("meals",meals);renderMenus();}
+function openPlanPicker(dayIdx){
+  planPickerTarget=dayIdx;
+  document.getElementById("planpicker-title").textContent="Mahlzeit fur "+DAYS[dayIdx];
+  document.getElementById("planpicker-chips").innerHTML=meals.map(function(m){return "<span class=\"picker-chip\" onclick=\"planPickerPick('"+m.replace(/'/g,"\'")+"\')\">"+ m+"</span>";}).join("");
+  document.getElementById("planpicker-custom").value="";
+  openOverlay("overlay-planpicker");
+}
+function planPickerPick(name){if(planPickerTarget===null)return;mealPlan[planPickerTarget]=name;save("mealPlan",mealPlan);closeOverlay("overlay-planpicker");renderMenus();}
+function planPickerCustom(){var v=document.getElementById("planpicker-custom").value.trim();if(!v)return;planPickerPick(v);}
+// Universal: extrahiert Text aus jeder plausiblen API-Antwort-Struktur
+function extractKIText(data){
+  if(!data) return "";
+  // Standard Anthropic: {content:[{type:"text",text:"..."}]}
+  if(Array.isArray(data.content)){
+    var t=data.content.filter(function(b){return b&&(b.type==="text"||typeof b.text==="string");}).map(function(b){return b.text||"";}).join("\n");
+    if(t) return t;
+  }
+  // content als String
+  if(typeof data.content==="string") return data.content;
+  // {completion:"..."}
+  if(typeof data.completion==="string") return data.completion;
+  // {text:"..."}
+  if(typeof data.text==="string") return data.text;
+  // {message:{content:...}}
+  if(data.message){
+    if(typeof data.message.content==="string") return data.message.content;
+    if(Array.isArray(data.message.content)){
+      var mt=data.message.content.map(function(b){return (b&&b.text)||"";}).join("\n");
+      if(mt) return mt;
+    }
+  }
+  // OpenAI-Stil {choices:[{message:{content:"..."}}]}
+  if(Array.isArray(data.choices)&&data.choices[0]){
+    var ch=data.choices[0];
+    if(ch.message&&typeof ch.message.content==="string") return ch.message.content;
+    if(typeof ch.text==="string") return ch.text;
+  }
+  return "";
+}
+function parseKIJson(raw,type){
+  // type: "obj" oder "arr"
+  if(!raw) return null;
+  var re=type==="arr"?/\[[\s\S]*\]/:/\{[\s\S]*\}/;
+  var m=raw.match(re);
+  if(!m) return null;
+  try{ return JSON.parse(m[0]); }catch(e){ return null; }
+}
+
+async function kiMealPlan(){
+  var btn=document.getElementById("ki-plan-btn"),spin=document.getElementById("ki-plan-spin"),msg=spin.querySelector("p");
+  btn.disabled=true;spin.classList.add("active");msg.textContent="KI plant ...";
+  var tkStr=tkItems.map(function(i){return i.name+" ("+i.count+"x)";}).join(", ")||"nichts";
+  var mealStr=meals.join(", ")||"keine";
+  var month=new Date().toLocaleString("de-DE",{month:"long"});
+  try{
+    var res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:600,
+        messages:[{role:"user",content:"Erstelle Essensplan Mo-So. TK-Vorrat: "+tkStr+". Gespeicherte Mahlzeiten: "+mealStr+". Monat: "+month+". 3 Personen (Erwachsene + Kleinkind). Nutze bevorzugt gespeicherte Mahlzeiten. Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, keine Erklaerung, keine Backticks. Schluessel 0 bis 6 (0=Montag), Werte sind Mahlzeit-Namen als String."}]})
+    });
+    if(!res.ok){var et=await res.text();msg.textContent="Status "+res.status+": "+et.slice(0,140);btn.disabled=false;return;}
+    var data=await res.json();
+    if(data.error){msg.textContent="API: "+(data.error.message||"Fehler");btn.disabled=false;return;}
+    var raw=extractKIText(data);
+    if(!raw){msg.textContent="Struktur: "+JSON.stringify(data).slice(0,160);btn.disabled=false;return;}
+    var parsed=parseKIJson(raw,"obj");
+    if(!parsed){msg.textContent="Kein JSON: "+raw.slice(0,120);btn.disabled=false;return;}
+    Object.assign(mealPlan,parsed);save("mealPlan",mealPlan);
+    spin.classList.remove("active");msg.textContent="KI plant ...";
+    renderMenus();btn.disabled=false;return;
+  }catch(e){msg.textContent="Fehler: "+e.message;btn.disabled=false;return;}
+}
+function renderBrain(){
+  var items=bdFilter==="all"?bdItems:(bdFilter.indexOf("cat:")===0?bdItems.filter(function(i){return i.category===bdFilter.slice(4);}):bdItems.filter(function(i){return i.prio===bdFilter;}));
+  document.getElementById("bd-list").innerHTML=items.length?items.map(function(it){
+    var i=bdItems.indexOf(it);
+    var catBadge=it.category?"<span style=\"display:inline-block;font-size:10px;background:#E8F0E8;color:#5C7A5C;border-radius:8px;padding:1px 7px;margin-top:3px;margin-right:4px\">"+it.category+"</span>":"";
+    var movedBadge=it.movedTo?"<span style=\"display:inline-block;font-size:10px;color:#5C7A5C;margin-top:3px\">\u2192 "+it.movedTo+"</span>":"";
+    var badges=(catBadge||movedBadge)?"<div>"+catBadge+movedBadge+"</div>":"";
+    return "<div class=\"bd-item\"><span class=\"bd-prio\">"+(PE[it.prio]||"?")+"</span><span class=\"bd-text "+(it.done?"done":"")+"\">"+it.text+badges+"</span><div class=\"bd-actions\"><button class=\"bd-act\" onclick=\"openMove("+i+")\">\u27a1\uFE0F</button><button class=\"bd-act\" onclick=\"pinBD("+i+")\">"+(it.pinned?"\uD83D\uDCCD":"\uD83D\uDCCC")+"</button><button class=\"bd-act\" onclick=\"doneBD("+i+")\">\u2713</button><button class=\"bd-act\" onclick=\"delBD("+i+")\">\u00d7</button></div></div>";
+  }).join(""):"<div style=\"font-size:13px;color:var(--muted);padding:12px 0\">Nichts hier.</div>";
+  renderCatChips();
+  renderOrga();
+  document.getElementById("recurring-list").innerHTML=recurring.map(function(r,i){
+    return "<div class=\"check-item\"><div class=\"cb\"></div><div class=\"ci-text\">"+r.text+" <span style=\"font-size:12px;color:var(--muted)\">("+["Mo","Di","Mi","Do","Fr","Sa","So"][r.day]+")</span></div><button class=\"del-btn\" onclick=\"delRec("+i+")\">x</button></div>";
+  }).join("");
+}
+function renderOrga(){
+  var el=document.getElementById("orga-list");
+  if(!el)return;
+  el.innerHTML=orgaList.map(function(it,i){
+    return "<div class=\"check-item\"><div class=\"cb "+(it.done?"done":"")+"\" onclick=\"toggleOrga("+i+")\"></div><div class=\"ci-text "+(it.done?"done":"")+"\">"+it.text+"</div><button class=\"del-btn\" onclick=\"delOrga("+i+")\">x</button></div>";
+  }).join("")||"<div style=\"font-size:13px;color:var(--muted);padding:8px 0\">Leer \u2014 hier sammeln sich Termine, Auto, Arzt, Garten, grosse To-Dos.</div>";
+}
+function addOrga(){var inp=document.getElementById("add-orga-input");if(!inp.value.trim())return;orgaList.push({text:inp.value.trim(),done:false});save("orgaList",orgaList);inp.value="";renderOrga();}
+function toggleOrga(i){orgaList[i].done=!orgaList[i].done;save("orgaList",orgaList);renderOrga();}
+function delOrga(i){orgaList.splice(i,1);save("orgaList",orgaList);renderOrga();}
+
+var moveTarget=null;
+function openMove(i){
+  moveTarget=i;
+  var it=bdItems[i];
+  document.getElementById("move-itemtext").textContent="\u201e"+it.text+"\u201c";
+  var targets=[
+    {label:"\uD83D\uDDC2\uFE0F Orga-Liste",fn:"moveToOrga"},
+    {label:"\uD83D\uDED2 Einkauf (Frisches)",fn:"moveToShopWeek"},
+    {label:"\uD83D\uDCE6 Grosseinkauf",fn:"moveToShopMonth"},
+    {label:"\uD83D\uDCCB Mealprep-To-Do",fn:"moveToMealprep"},
+    {label:"\uD83C\uDF7D\uFE0F Als Mahlzeit",fn:"moveToMeal"}
+  ];
+  document.getElementById("move-targets").innerHTML=targets.map(function(t){
+    return "<span class=\"picker-chip\" onclick=\""+t.fn+"()\">"+t.label+"</span>";
+  }).join("");
+  document.getElementById("move-categories").innerHTML=bdCategories.map(function(cat){
+    return "<span class=\"picker-chip\" onclick=\"assignCategory(\'"+cat.replace(/'/g,"\\'")+"\')\">"+cat+"</span>";
+  }).join("");
+  openOverlay("overlay-move");
+}
+function markMoved(label){
+  if(moveTarget===null)return;
+  bdItems[moveTarget].movedTo=label;
+  save("bdItems",bdItems);
+  closeOverlay("overlay-move");
+  renderBrain();
+}
+function moveToOrga(){var it=bdItems[moveTarget];orgaList.push({text:it.text,done:false});save("orgaList",orgaList);markMoved("Orga-Liste");}
+function moveToShopWeek(){var it=bdItems[moveTarget];shopWeek.push({name:it.text,done:false});save("shopWeek",shopWeek);markMoved("Einkauf");}
+function moveToShopMonth(){var it=bdItems[moveTarget];shopMonth.push({name:it.text,cat:"Sonstiges",done:false});save("shopMonth",shopMonth);markMoved("Grosseinkauf");}
+function moveToMealprep(){var it=bdItems[moveTarget];mealprepList.push({text:it.text,done:false});save("mealprepList",mealprepList);markMoved("Mealprep");}
+function moveToMeal(){var it=bdItems[moveTarget];if(!meals.includes(it.text))meals.push(it.text);save("meals",meals);markMoved("Mahlzeiten");}
+function assignCategory(cat){
+  if(moveTarget===null)return;
+  bdItems[moveTarget].category=cat;
+  save("bdItems",bdItems);
+  closeOverlay("overlay-move");
+  renderBrain();
+}
+function addCategory(){
+  var inp=document.getElementById("add-cat-input");
+  if(!inp.value.trim())return;
+  bdCategories.push(inp.value.trim());
+  save("bdCategories",bdCategories);
+  inp.value="";
+  if(moveTarget!==null)openMove(moveTarget);
+}
+
+function renderCatChips(){
+  var el=document.getElementById("cat-chips");
+  if(!el)return;
+  var counts={};
+  bdItems.forEach(function(it){if(it.category)counts[it.category]=(counts[it.category]||0)+1;});
+  var chips=bdCategories.map(function(cat){
+    var n=counts[cat]||0;
+    var active=bdFilter==="cat:"+cat;
+    return "<span onclick=\"filterByCat(\'"+cat.replace(/'/g,"\\'")+"\')\" style=\"font-size:12px;padding:5px 11px;border-radius:14px;cursor:pointer;border:1px solid "+(active?"#5C7A5C":"#E0D8CC")+";background:"+(active?"#5C7A5C":"#fff")+";color:"+(active?"#fff":"#5C7A5C")+"\">"+cat+" "+n+"</span>";
+  }).join("");
+  el.innerHTML=chips;
+}
+function filterByCat(cat){
+  bdFilter=(bdFilter==="cat:"+cat)?"all":"cat:"+cat;
+  document.querySelectorAll(".ptab").forEach(function(b){b.classList.remove("active");});
+  if(bdFilter==="all")document.querySelectorAll(".ptab")[0].classList.add("active");
+  renderBrain();
+}
+function filterBD(f,btn){bdFilter=f;document.querySelectorAll(".ptab").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");renderBrain();}
+function addBD(){var inp=document.getElementById("add-bd-input");var prio=document.getElementById("bd-prio-sel").value;if(!inp.value.trim())return;bdItems.unshift({text:inp.value.trim(),prio:prio,done:false,pinned:false});save("bdItems",bdItems);inp.value="";renderBrain();}
+function doneBD(i){bdItems[i].done=!bdItems[i].done;save("bdItems",bdItems);renderBrain();}
+function pinBD(i){bdItems[i].pinned=!bdItems[i].pinned;save("bdItems",bdItems);renderBrain();}
+function delBD(i){bdItems.splice(i,1);save("bdItems",bdItems);renderBrain();}
+function addRecurring(){var inp=document.getElementById("add-rec-input");var day=parseInt(document.getElementById("rec-day-sel").value);if(!inp.value.trim())return;recurring.push({text:inp.value.trim(),day:day});save("recurring",recurring);inp.value="";renderBrain();}
+function delRec(i){recurring.splice(i,1);save("recurring",recurring);renderBrain();}
+
+function openPicker(dayIdx,e){e.stopPropagation();pickerTarget=dayIdx;document.getElementById("picker-chips").innerHTML=meals.map(function(m){return "<span class=\"picker-chip\" onclick=\"pickMeal('"+m.replace(/'/g,"\'")+"\')\">"+ m+"</span>";}).join("");document.getElementById("picker-custom").value="";openOverlay("overlay-picker");}
+function pickMeal(name){if(pickerTarget===null)return;mealPlan[pickerTarget]=name;save("mealPlan",mealPlan);saveDay(pickerTarget,"meal",name);closeOverlay("overlay-picker");renderWeek();}
+function pickerCustom(){var v=document.getElementById("picker-custom").value.trim();if(!v)return;pickMeal(v);}
+
+function openRecipe(name){
+  recipeTarget=name;var r=recipes[name]||{};
+  document.getElementById("recipe-name-input").value=name;
+  document.getElementById("recipe-ingredients").value=r.ingredients||"";
+  document.getElementById("recipe-steps").value=r.steps||"";
+  document.getElementById("recipe-img-preview").innerHTML=r.photo?"<img class=\"recipe-img\" src=\""+r.photo+"\">":"";
+  currentPhotoBase64=null;document.getElementById("ki-recipe-btn").disabled=true;
+  document.getElementById("ki-recipe-spin").classList.remove("active");
+  openOverlay("overlay-recipe");
+}
+function openNewRecipe(){
+  recipeTarget="__new__";
+  document.getElementById("recipe-name-input").value="";
+  document.getElementById("recipe-ingredients").value="";
+  document.getElementById("recipe-steps").value="";
+  document.getElementById("recipe-img-preview").innerHTML="";
+  currentPhotoBase64=null;document.getElementById("ki-recipe-btn").disabled=true;
+  document.getElementById("ki-recipe-spin").classList.remove("active");
+  openOverlay("overlay-recipe");
+}
+function saveRecipe(){
+  var newName=document.getElementById("recipe-name-input").value.trim();
+  if(!newName){alert("Bitte Gerichtsname eingeben.");return;}
+  if(recipeTarget&&recipeTarget!=="__new__"&&recipeTarget!==newName){
+    if(!meals.includes(newName))meals.push(newName);
+    var idx=meals.indexOf(recipeTarget);if(idx>-1)meals.splice(idx,1,newName);
+    delete recipes[recipeTarget];save("meals",meals);
+  }else if(!meals.includes(newName)){meals.push(newName);save("meals",meals);}
+  var ex=recipes[newName]||{};
+  recipes[newName]={ingredients:document.getElementById("recipe-ingredients").value,steps:document.getElementById("recipe-steps").value,photo:currentPhotoBase64||ex.photo||null};
+  save("recipes",recipes);recipeTarget=newName;closeOverlay("overlay-recipe");renderMenus();
+}
+function handlePhotoUpload(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img2=new Image();
+    img2.onload=function(){
+      var canvas=document.createElement("canvas");
+      var MAX=800,w=img2.width,h=img2.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      canvas.width=w;canvas.height=h;canvas.getContext("2d").drawImage(img2,0,0,w,h);
+      var c=canvas.toDataURL("image/jpeg",0.75);
+      currentPhotoBase64=c;
+      document.getElementById("recipe-img-preview").innerHTML="<img class=\"recipe-img\" src=\""+c+"\">"; 
+      document.getElementById("ki-recipe-btn").disabled=false;
+      var ni=document.getElementById("recipe-name-input");
+      if(!ni.value){var fn=file.name.replace(/\.[^.]+$/,"").replace(/[-_]/g," ");ni.value=fn.charAt(0).toUpperCase()+fn.slice(1);}
+    };img2.src=e.target.result;
+  };reader.readAsDataURL(file);input.value="";
+}
+async function kiRecognizeRecipe(){
+  if(!currentPhotoBase64){alert("Bitte zuerst Foto hochladen.");return;}
+  var btn=document.getElementById("ki-recipe-btn"),spin=document.getElementById("ki-recipe-spin"),msg=spin.querySelector("p");
+  btn.disabled=true;spin.classList.add("active");msg.textContent="KI analysiert ...";
+  var b64=currentPhotoBase64.split(",")[1];
+  var mt=currentPhotoBase64.indexOf("image/png")>-1?"image/png":"image/jpeg";
+  try{
+    var res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,
+        messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mt,data:b64}},{type:"text",text:"Erkenne dieses Gericht auf dem Foto. Antworte AUSSCHLIESSLICH mit einem JSON-Objekt, keine Erklaerung, keine Backticks. Felder: name (Gerichtsname auf Deutsch), zutaten (kommagetrennt fuer 4 Portionen), zubereitung (3-5 Saetze, einfach)."}]}]})
+    });
+    if(!res.ok){var et=await res.text();msg.textContent="Status "+res.status+": "+et.slice(0,140);btn.disabled=false;return;}
+    var data=await res.json();
+    if(data.error){msg.textContent="API: "+(data.error.message||"Fehler");btn.disabled=false;return;}
+    var raw=extractKIText(data);
+    if(!raw){msg.textContent="Struktur: "+JSON.stringify(data).slice(0,160);btn.disabled=false;return;}
+    var p=parseKIJson(raw,"obj");
+    if(!p){msg.textContent="Kein JSON: "+raw.slice(0,120);btn.disabled=false;return;}
+    if(p.name){var ni=document.getElementById("recipe-name-input");if(!ni.value)ni.value=p.name;}
+    if(p.zutaten)document.getElementById("recipe-ingredients").value=p.zutaten;
+    if(p.zubereitung)document.getElementById("recipe-steps").value=p.zubereitung;
+    spin.classList.remove("active");msg.textContent="KI analysiert ...";btn.disabled=false;return;
+  }catch(e){msg.textContent="Fehler: "+e.message;btn.disabled=false;return;}
+}
+function toggleMic(targetId,btnId,statusId){
+  var btn=document.getElementById(btnId);
+  if(isRecording&&activeRecBtn===btnId){if(recognition)recognition.stop();return;}
+  if(isRecording&&recognition)recognition.stop();
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){document.getElementById(statusId).textContent="Nicht unterstuzt";return;}
+  recognition=new SR();recognition.lang="de-DE";recognition.continuous=false;recognition.interimResults=false;
+  recognition.onresult=function(e){
+    var text=e.results[0][0].transcript;
+    var el=document.getElementById(targetId);
+    if(el.tagName==="TEXTAREA"){el.value+=(el.value?" ":"")+text;}else{el.value+=(el.value?" ":"")+text;}
+    document.getElementById(statusId).textContent="ok: "+text.slice(0,25)+"...";
+  };
+  recognition.onerror=function(){stopRec(btnId,statusId);};
+  recognition.onend=function(){stopRec(btnId,statusId);};
+  isRecording=true;activeRecBtn=btnId;
+  btn.classList.add("recording");btn.innerHTML="Stop";
+  document.getElementById(statusId).textContent="Aufnahme lauft...";
+  recognition.start();
+}
+function stopRec(btnId,statusId){
+  isRecording=false;activeRecBtn=null;
+  var btn=document.getElementById(btnId);if(!btn)return;
+  btn.classList.remove("recording");btn.innerHTML="Mic";
+  document.getElementById(statusId).textContent="Antippen zum Diktieren";
+}
+
+function openOverlay(id){document.getElementById(id).classList.add("active");}
+function closeOverlay(id){document.getElementById(id).classList.remove("active");}
+document.querySelectorAll(".overlay").forEach(function(o){o.addEventListener("click",function(e){if(e.target===this)this.classList.remove("active");});});
+
+function openMama(){
+  var today=new Date();today.setHours(0,0,0,0);var monday=getMon(today);
+  var txt="Wochenplan KW "+currentKW+"\n\n";
+  DAYS.forEach(function(name,i){
+    var d=weekData[i]||{};var dayDate=new Date(monday);dayDate.setDate(monday.getDate()+i);
+    var meal=mealPlan[i]||d.meal||"";
+    txt+=name+" "+fmtD(dayDate)+"\n";
+    if(meal)txt+="  Essen: "+meal+"\n";
+    if(d.termin)txt+="  Termine: "+d.termin+"\n";
+    txt+="\n";
+  });
+  txt+="Liebe Grusse";
+  document.getElementById("mama-text").value=txt;openOverlay("overlay-mama");
+}
+function copyMama(){var t=document.getElementById("mama-text");t.select();try{document.execCommand("copy");alert("Kopiert!");}catch(e){alert("Bitte manuell kopieren.");}}
+
+function openSettings(){renderSettingsZones();renderSettingsRoutines();openOverlay("overlay-settings");}
+function renderSettingsZones(){
+  document.getElementById("settings-zones").innerHTML=zones.map(function(z,i){
+    return "<div style=\"margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)\"><div class=\"row-label\">Zone "+(i+1)+" Name</div><input class=\"sr-input\" value=\""+z.name+"\" onblur=\"saveZone("+i+",'name',this.value)\" style=\"margin-bottom:6px;\"><div class=\"row-label\">Aufgaben (kommagetrennt)</div><input class=\"sr-input\" value=\""+z.tasks+"\" onblur=\"saveZone("+i+",'tasks',this.value)\"></div>";
+  }).join("");
+}
+function saveZone(i,field,val){zones[i][field]=val;save("zones",zones);}
+function resetZones(){if(!confirm("Zonen zurucksetzen?"))return;zones=JSON.parse(JSON.stringify(DZ));save("zones",zones);renderSettingsZones();renderHaus();}
+function renderSettingsRoutines(){
+  ["morgen","abend"].forEach(function(type){
+    document.getElementById("settings-routinen-"+type).innerHTML=(routines[type]||[]).map(function(r,i){
+      return "<div class=\"settings-row\"><input class=\"sr-input\" value=\""+r+"\" onblur=\"saveRoutine('"+type+"',"+i+",this.value)\"><button class=\"del-btn\" onclick=\"delRoutine('"+type+"',"+i+")\">x</button></div>";
+    }).join("");
+  });
+}
+function saveRoutine(type,i,val){routines[type][i]=val;save("routines",routines);}
+function delRoutine(type,i){routines[type].splice(i,1);save("routines",routines);renderSettingsRoutines();renderHaus();}
+function addRoutine(type){
+  var key=type==="morgen"?"rm":"ra";
+  var inp=document.getElementById("add-r"+key+"-input")||document.getElementById("add-r"+type[0]+"-input");
+  if(!inp||!inp.value.trim())return;
+  if(!routines[type])routines[type]=[];
+  routines[type].push(inp.value.trim());save("routines",routines);inp.value="";renderSettingsRoutines();renderHaus();
+}
+function openHelp(){openOverlay("overlay-help");}
+
+function printDashboard(){
+  var today=new Date();
+  var zi=weekZoneIdx%zones.length;
+  var mr=routines.morgen||[],ar=routines.abend||[];
+  var total=mr.length+ar.length;
+  var dm=(routineDone.morgen||[]).filter(Boolean).length+(routineDone.abend||[]).filter(Boolean).length;
+  var monday=getMon(today);
+  var mealsRows=DAYS.map(function(d,i){
+    var dd=new Date(monday);dd.setDate(monday.getDate()+i);
+    return "<tr><td style=\"font-weight:bold;width:90px\">"+d+"</td><td>"+(mealPlan[i]||"-")+"</td><td style=\"color:#B85C38;font-size:11px\">"+(MINITASKS[i]?"Mini: "+MINITASKS[i]:"")+"</td></tr>";
+  }).join("");
+  var tkAlert=tkItems.filter(function(i){return i.count<=1;});
+  var tkHtml=tkAlert.length?tkAlert.map(function(i){return "<li>"+i.name+": noch "+i.count+"</li>";}).join(""):"<li>TK-Vorrat in Ordnung</li>";
+  var orgaOpen=orgaList.filter(function(o){return !o.done;});
+  var orgaHtml=orgaOpen.length?orgaOpen.map(function(o){return "<li>\u25cb "+o.text+"</li>";}).join(""):"<li>-</li>";
+  var pinned=bdItems.filter(function(i){return i.pinned&&!i.done;});
+  var pinHtml=pinned.length?pinned.map(function(p){return "<li>"+p.text+"</li>";}).join(""):"<li>-</li>";
+  var dumpOpen=bdItems.filter(function(i){return !i.done&&!i.movedTo;});
+  var dumpHtml=dumpOpen.length?dumpOpen.map(function(d){return "<li>"+(PE[d.prio]||"")+" "+d.text+"</li>";}).join(""):"<li>-</li>";
+
+  var html="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Mein Planer</title><style>"+
+    "@page{size:A4;margin:14mm}*{margin:0;padding:0;box-sizing:border-box}"+
+    "body{font-family:-apple-system,Arial,sans-serif;color:#2C2C2C;font-size:11pt;line-height:1.4}"+
+    "h1{background:#5C7A5C;color:#fff;padding:12px 16px;border-radius:8px;font-size:16pt;margin-bottom:6px}"+
+    ".sub{font-size:9pt;color:#8A8278;margin-bottom:14px}"+
+    "h2{font-size:9pt;text-transform:uppercase;letter-spacing:.7px;color:#8A8278;margin:14px 0 6px;border-bottom:1px solid #E0D8CC;padding-bottom:3px}"+
+    "table{width:100%;border-collapse:collapse}td{padding:4px 6px;border-bottom:1px solid #EEE;font-size:10pt;vertical-align:top}"+
+    "ul{list-style:none;padding-left:4px}li{padding:3px 0;font-size:10pt}"+
+    ".row{display:flex;gap:20px}.col{flex:1}"+
+    ".big{font-size:13pt;font-weight:bold;color:#5C7A5C}"+
+    "</style></head><body>"+
+    "<h1>\uD83C\uDF3F Mein Planer</h1>"+
+    "<div class=\"sub\">KW "+currentKW+" \u00b7 Stand "+today.getDate()+"."+(today.getMonth()+1)+"."+today.getFullYear()+"</div>"+
+    "<div class=\"row\"><div class=\"col\"><h2>Zone der Woche</h2><div class=\"big\">Zone "+(zi+1)+": "+(zones[zi]?zones[zi].name:"-")+"</div>"+
+    "<ul style=\"margin-top:4px\">"+(zones[zi]?zones[zi].tasks.split(",").map(function(t){return "<li>\u25a1 "+t.trim()+"</li>";}).join(""):"")+"</ul></div>"+
+    "<div class=\"col\"><h2>Routinen</h2><div class=\"big\">"+dm+" von "+total+"</div></div></div>"+
+    "<h2>Essensplan diese Woche</h2><table>"+mealsRows+"</table>"+
+    "<h2>Termine diese Woche</h2><ul>"+(function(){var h="";for(var ti=0;ti<7;ti++){var dT=weekData[ti]||{};if(dT.termin&&dT.termin.trim())h+="<li>"+DAYS[ti].slice(0,2)+": "+dT.termin+"</li>";}return h||"<li>-</li>";})()+"</ul>"+
+    "<div class=\"row\"><div class=\"col\"><h2>TK-Vorrat Alarm</h2><ul>"+tkHtml+"</ul></div>"+
+    "<div class=\"col\"><h2>Angepinnt</h2><ul>"+pinHtml+"</ul></div></div>"+
+    "<h2>Orga-Liste (offen)</h2><ul>"+orgaHtml+"</ul>"+
+    "<h2>Brain Dump (offen, unsortiert)</h2><ul>"+dumpHtml+"</ul>"+
+    "</body></html>";
+
+  var w=window.open("","_blank");
+  if(!w){alert("Bitte Pop-ups erlauben, um zu drucken.");return;}
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){w.print();},400);
+}
+
+function printDashboard_end(){}
+
+function exportBackup(){
+  var keys=["zones","routines","weekData","checkWeekly","checkMonthly","routineDone","zoneTasks","tkItems","shopWeek","shopMonth","mealprepList","meals","recipes","mealPlan","bdItems","recurring","orgaList","bdCategories","activeZone","weekZoneIdx","currentKW"];
+  var backup={};
+  keys.forEach(function(k){try{var v=_hasLS?localStorage.getItem(k):_memStore[k];if(v!=null)backup[k]=v;}catch(e){}});
+  var blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  var d=new Date();
+  a.href=url;
+  a.download="Planer-Backup-"+d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+".json";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+
+function importBackup(input){
+  var file=input.files[0];if(!file)return;
+  if(!confirm("Backup laden? Aktuelle Daten werden ueberschrieben."))return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var backup=JSON.parse(e.target.result);
+      Object.keys(backup).forEach(function(k){
+        if(_hasLS)localStorage.setItem(k,backup[k]);else _memStore[k]=backup[k];
+      });
+      alert("Backup geladen! App wird neu gestartet.");
+      location.reload();
+    }catch(err){alert("Fehler: Datei nicht lesbar.");}
+  };
+  reader.readAsText(file);input.value="";
+}
+
+function clearAll(){try{if(_hasLS)localStorage.clear();}catch(e){}_memStore={};location.reload();}
+
+refreshDash();
+</script>
+</body>
+</html>
